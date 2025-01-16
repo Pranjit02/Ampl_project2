@@ -4,6 +4,8 @@ BASE_URL="http://localhost:8080"
 
 AUTH_HEADER="Authorization: Bearer mysecrettoken"
 
+echo "Run project"
+
 echo "GET /public/tasks"
 curl -X GET "$BASE_URL/public/tasks"
 

@@ -49,7 +49,6 @@ func UpdateTask(c *gin.Context) {
 	database.DB.Save(&task)
 	c.JSON(http.StatusOK, task)
 }
-
 func DeleteTask(c *gin.Context) {
 	var task database.Task
 	if err := database.DB.First(&task, c.Param("id")).Error; err != nil {

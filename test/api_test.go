@@ -1,6 +1,9 @@
-package Api_test
+package test
 
 import (
+	"Ampl_project2/database"
+	"Ampl_project2/handlers"
+	"Ampl_project2/middleware"
 	"bytes"
 	"net/http"
 	"net/http/httptest"
@@ -8,44 +11,37 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
-	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
 var globalDB *gorm.DB
 
 func setupRouter() *gin.Engine {
+	database.InitDB()
 	r := gin.Default()
-	dsn := "root:@tcp(127.0.0.1:3306)/test?charset=utf8mb4&parseTime=True&loc=Local"
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
-	if err != nil {
-		panic("failed to connect to MySQL database")
-	}
-	// Create table for Task model
-	db.AutoMigrate(&db.Task{})
-	globalDB = db
-	// Define routes
+
 	public := r.Group("/public")
 	{
-		public.GET("/tasks", getTasks)
+		public.GET("/tasks", handlers.GetTasks)
 	}
+
 	protected := r.Group("/tasks")
-	protected.Use(authMiddleware())
-	protected.Use(rateLimiterMiddleware())
+	protected.Use(middleware.AuthMiddleware())
+	protected.Use(middleware.RateLimiterMiddleware())
 	{
-		protected.GET(":id", getTaskByID)
-		protected.POST("", createTask)
-		protected.PUT(":id", updateTask)
-		protected.DELETE(":id", deleteTask)
+		protected.GET(":id", handlers.GetTaskByID)
+		protected.POST("", handlers.CreateTask)
+		protected.PUT(":id", handlers.UpdateTask)
+		protected.DELETE(":id", handlers.DeleteTask)
 	}
+
 	return r
 }
 
 func TestGetTasksPublic(t *testing.T) {
 	r := setupRouter()
-	rdb := globalDB
-	rdb.Create(&Task{Title: "Task 1", Description: "Description 1", Status: "pending"})
-	rdb.Create(&Task{Title: "Task 2", Description: "Description 2", Status: "completed"})
+	database.DB.Create(&database.Task{Title: "Task 1", Description: "Description 1", Status: "pending"})
+	database.DB.Create(&database.Task{Title: "Task 2", Description: "Description 2", Status: "completed"})
 
 	w := performRequest(r, "GET", "/public/tasks", nil)
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -61,6 +57,7 @@ func TestCreateTaskProtected(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Contains(t, w.Body.String(), "New Task")
 }
+
 func TestRateLimiting(t *testing.T) {
 	r := setupRouter()
 	for i := 0; i < 6; i++ {
@@ -72,6 +69,7 @@ func TestRateLimiting(t *testing.T) {
 		}
 	}
 }
+
 func performRequest(r http.Handler, method, path string, body []byte) *httptest.ResponseRecorder {
 	req, _ := http.NewRequest(method, path, bytes.NewBuffer(body))
 	req.Header.Set("Authorization", "Bearer mysecrettoken")

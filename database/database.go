@@ -2,19 +2,16 @@ package database
 
 import (
 	"fmt"
-	"time"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
 type Task struct {
-	ID          uint      `gorm:"primaryKey" json:"id"`
-	Title       string    `json:"title" binding:"required"`
-	Description string    `json:"description" binding:"required"`
-	Status      string    `json:"status" binding:"required,oneof=pending in-progress completed"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID          uint   `gorm:"primaryKey" json:"id"`
+	Title       string `json:"title" binding:"required"`
+	Description string `json:"description" binding:"required"`
+	Status      string `json:"status" binding:"required,oneof=pending in-progress completed"`
 }
 
 var DB *gorm.DB
